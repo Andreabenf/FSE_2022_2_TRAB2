@@ -1,5 +1,10 @@
 {
     "files.associations": {
-        "pid.h": "c"
+        "pid.h": "c",
+        "ioctl.h": "c",
+        "gpio.h": "c",
+        "sensortemp.h": "c",
+        "bme280.h": "c",
+        "unistd.h": "c"
     }
 }
