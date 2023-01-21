@@ -58,7 +58,7 @@ void writeUart(char *package, int pkgLength)
    return;
 }
 
-ComunicaUart(char prefix, char dataType)
+ComunicaUartReq(char prefix, char dataType)
 {
    char *package = (char *)malloc(pkgLength * sizeof(char));
 
@@ -67,6 +67,39 @@ ComunicaUart(char prefix, char dataType)
    setCrc(package, pkgLength);
 
    writeUart(package, pkgLength);
+
+   free(package);
+
+   getResponse();
+}
+
+
+void ComunicaUartSendInt(char prefix, char dataType, int payload, int size)
+{
+   int newPkg= pkgLength+size;
+   char *package = (char *)malloc(newPkg * sizeof(char));
+
+   montaPack(package, prefix, dataType);
+   memcpy(&package[7], &payload, 4);
+   setCrc(package, newPkg);
+
+   writeUart(package, newPkg);
+
+   free(package);
+
+   getResponse();
+}
+
+void ComunicaUartSendFloat(char prefix, char dataType, float payload, int size)
+{
+   int newPkg= pkgLength+size;
+   char *package = (char *)malloc(newPkg * sizeof(char));
+
+   montaPack(package, prefix, dataType);
+   memcpy(&package[7], &payload, 4);
+   setCrc(package, newPkg);
+
+   writeUart(package, newPkg);
 
    free(package);
 
@@ -112,17 +145,17 @@ void getResponse()
 {
    memset(responsePackage, 0x00, RX_BUFFER);
 
-   sleep(1);
+   sleep(2);
 
    globalResPkgLen = read(uart0_filestream, (void *)responsePackage, RX_BUFFER);
 
    if (globalResPkgLen < 0)
    {
-      printf("getResponse: read error\n");
+      //printf("getResponse: read error\n");
    }
    else if (globalResPkgLen == 0)
    {
-      printf("getResponse: got no response\n");
+      //printf("getResponse: got no response\n");
       return;
    }
    else
@@ -136,7 +169,7 @@ void getResponse()
          printf("getResponse: Erro no match CRC\n");
          return;
       }
-      printf("getResponse: received %d bytes\n", globalResPkgLen);
+      //printf("getResponse: received %d bytes\n", globalResPkgLen);
    }
 
    return;
@@ -144,19 +177,19 @@ void getResponse()
 
 float leTempInterna()
 {
-   ComunicaUart(COD_REQ, REQ_TI);
+   ComunicaUartReq(COD_REQ, REQ_TI);
 
    float internalTemperature;
    memcpy(&internalTemperature, &responsePackage[3], 4);
    memcpy(&restemp, &responsePackage[3], 4);
 
-   printf("leTempInterna: int. temp. is %f vem ai\n", internalTemperature);
+   printf("leTempInterna: int. temp. is %f\n", internalTemperature);
    return internalTemperature;
 }
 
 float LeTempRef()
 {
-   ComunicaUart(COD_REQ, REQ_TR);
+   ComunicaUartReq(COD_REQ, REQ_TR);
 
    float referenceTemperature;
    memcpy(&referenceTemperature, &responsePackage[3], 4);
@@ -168,7 +201,7 @@ float LeTempRef()
 int LeComandos()
 {
 
-   ComunicaUart(COD_REQ, REQ_DASH_COMAND);
+   ComunicaUartReq(COD_REQ, REQ_DASH_COMAND);
 
    int comandorec;
    memcpy(&comandorec, &responsePackage[3], 4);
