@@ -44,6 +44,7 @@ void menuTR()
   {
     printf("Escreva o valor de: \nTR: ");
     scanf("%lf", &referencia_);
+    modoTR=1;
   }
 
   __fpurge(stdin);
@@ -55,6 +56,7 @@ void *menuFunc()
   do
   {
     // system("clear");
+    printf("Modo: %s\n\n", modoTR?"Terminal":"DashBoard");
     printf("Digite 1 para Decidir MODO TR \n");
     printf("Digite 2 para definir os valores das constantes Kp, Ki e Kd\n");
 
@@ -159,20 +161,22 @@ void *controlaTemp()
 }
 void trata_SIGINT()
 {
+  closeUart();
+  gelaForno(0);
+  esquentaForno(0);
   exit(1);
 }
 int main()
 {
-
   init();
 
-  signal(SIGINT, trata_SIGINT);
+   signal(SIGINT, trata_SIGINT);
 
-  // pthread_create(&menu, NULL, menuFunc, NULL);
+  pthread_create(&menu, NULL, menuFunc, NULL);
   pthread_create(&recebe, NULL, recebeComandos, NULL);
   // pthread_create(&controla, NULL, controlaTemp, NULL);
 
-  // pthread_join(menu, NULL);
+  pthread_join(menu, NULL);
   pthread_join(recebe, NULL);
   // pthread_join(controla, NULL);
 }
