@@ -145,7 +145,7 @@ void getResponse()
 {
    memset(responsePackage, 0x00, RX_BUFFER);
 
-   sleep(2);
+   sleep(1);
 
    globalResPkgLen = read(uart0_filestream, (void *)responsePackage, RX_BUFFER);
 
@@ -205,7 +205,7 @@ int LeComandos()
 
    int comandorec;
    memcpy(&comandorec, &responsePackage[3], 4);
-   printf("LeComandos: %d\n", comandorec);
+   // printf("LeComandos: %d\n", comandorec);
 
    return comandorec;
 }

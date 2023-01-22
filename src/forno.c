@@ -168,11 +168,11 @@ int main()
 
   signal(SIGINT, trata_SIGINT);
 
-  pthread_create(&menu, NULL, menuFunc, NULL);
+  // pthread_create(&menu, NULL, menuFunc, NULL);
   pthread_create(&recebe, NULL, recebeComandos, NULL);
-  pthread_create(&controla, NULL, controlaTemp, NULL);
+  // pthread_create(&controla, NULL, controlaTemp, NULL);
 
-  pthread_join(menu, NULL);
+  // pthread_join(menu, NULL);
   pthread_join(recebe, NULL);
-  pthread_join(controla, NULL);
+  // pthread_join(controla, NULL);
 }

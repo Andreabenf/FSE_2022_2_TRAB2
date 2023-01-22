@@ -5,7 +5,7 @@
 #define COD_REQ 0x23
 #define COD_SEND 0x16
 
-#define RX_BUFFER 56
+#define RX_BUFFER 30
 
 #define REQ_TI 0xC1
 #define REQ_TR 0xC2
