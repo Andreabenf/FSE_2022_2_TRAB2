@@ -24,6 +24,9 @@ int ret1;
 FILE *fpt;
 int semata=0;
 
+int ti_tmp=1;
+int tr_tmp=1;
+
 
 
 void init()
@@ -70,17 +73,23 @@ void *controlaTemp()
 {
   while (1)
   {
-    float TE = getCurrentTemperature();
-    printf("TE: %.2f⁰C\n", TE);
+    float TAMB = getCurrentTemperature();
+    printf("TAMB: %.2f⁰C\n", TAMB);
+    
     float TI = leTempInterna();
-    printf("Ti (fora): %f⁰C\n", (TI));
+    if(TI<=0){
+      TI=ti_tmp;
+    }else{
+      ti_tmp=TI;
+    }
+    printf("Ti: %f⁰C\n", (TI));
     int control_signal = (int)pid_controle(TI);
-    printf("pid: %dzn", control_signal);
+    printf("pid: %d\n", control_signal);
     ComunicaUartSendInt(COD_SEND, SEND_CONTROL_SIGNAL, control_signal, 4);
 
     if (control_signal < 0.0)
     {
-      printf("LIGA VENTO\n");
+      printf("[ESFRIANDO] Ligando ventoinha...\n");
       control_signal = control_signal > -40 ? 40 : control_signal * (-1);
       gelaForno(control_signal);
       esquentaForno(0);
@@ -89,13 +98,10 @@ void *controlaTemp()
     // pid: se positivo -> resistencia
     else if (control_signal > 0.0)
     {
-      printf("LIGA RESISTENCIA\n");
+      printf("[ESQUENTANDO] Ligando resistencia...\n");
       esquentaForno(control_signal);
       gelaForno(0);
     }
-
-    // ComunicaUartSendInt(COD_SEND, SEND_SYSTEM_STATE, ligado, 1);
-    // ComunicaUartSendInt(COD_SEND, SEND_FUNCTIONING_STATE, funcionando, 1);
 
     if (modoTR)
     {
@@ -104,11 +110,17 @@ void *controlaTemp()
     else
     {
       referencia_ = LeTempRef();
+      if(referencia_<=0){
+      referencia_=tr_tmp;
+    }else{
+      tr_tmp=referencia_;
+    }
+      printf("TR lida: %f\n", referencia_);
       pid_atualiza_referencia(referencia_);
     }
 
-    ComunicaUartSendFloat(COD_SEND, SEND_TEMP_AMB, TE, 4);
-delay(1000);
+    ComunicaUartSendFloat(COD_SEND, SEND_TEMP_AMB, TAMB, 4);
+    delay(1000);
   }
 }
 
@@ -145,6 +157,7 @@ void recebeComandos()
       printf("MENU!!!\n");
       break;
     }
+    delay(500);
   } while (1);
 }
 
