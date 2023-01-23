@@ -10,8 +10,8 @@
 #include <pthread.h>
 #include <signal.h>
 
-int ligado = 1;
-int funcionando = 1;
+int ligado = 0;
+int funcionando = 0;
 double referencia_ = 0.0;
 double Kp_ = 30.0;  // Ganho Proporcional
 double Ki_ = 0.2;   // Ganho Integral
@@ -33,8 +33,21 @@ void init()
 {
   connectBme();
   openUart("/dev/serial0");
-  fpt = fopen("MyFile.csv", "w+");
+  fpt = fopen("Logs.csv", "w+");
+  fprintf(fpt,"data_e_hora, temperatura_interna, temperatura_externa, temperatura_user, atuadores(%%)\n");
   initWiringPi();
+}
+
+void logCsv(float temperatura_interna,float temperatura_externa,float temperatura_user,float atuadores){
+  time_t t = time(NULL);         // Get current time
+  struct tm *tm = localtime(&t); // Convert to local time
+  char s[25];
+
+  // Format the timestamp as a string (e.g., "2018-12-21 12:34:56")
+  printf("escrevente...\n");
+  strftime(s, sizeof(s), "%Y-%m-%d %H:%M:%S'", tm);
+  fprintf(fpt,"%s, %f, %f, %f\n",s, temperatura_interna, temperatura_externa, temperatura_user, atuadores);
+  
 }
 void menuTR()
 {
@@ -71,13 +84,13 @@ void *amigo(){
 }
 void *controlaTemp()
 {
-  while (1)
+  while (funcionando)
   {
     float TAMB = getCurrentTemperature();
     printf("TAMB: %.2f⁰C\n", TAMB);
     
     float TI = leTempInterna();
-    if(TI<=0){
+    if(TI<=0.5){
       TI=ti_tmp;
     }else{
       ti_tmp=TI;
@@ -110,7 +123,7 @@ void *controlaTemp()
     else
     {
       referencia_ = LeTempRef();
-      if(referencia_<=0){
+      if(referencia_<=0.5){
       referencia_=tr_tmp;
     }else{
       tr_tmp=referencia_;
@@ -120,6 +133,7 @@ void *controlaTemp()
     }
 
     ComunicaUartSendFloat(COD_SEND, SEND_TEMP_AMB, TAMB, 4);
+    logCsv(TI,TAMB,referencia_,control_signal);
     delay(1000);
   }
 }
@@ -133,22 +147,26 @@ void recebeComandos()
     {
     case LIGA_FORNO:
       printf("LIGA_FORNO!!!\n");
+      ligado=1;
       ComunicaUartSendInt(COD_SEND, SEND_SYSTEM_STATE, ligado, 1);
 
       break;
     case DESLIGA_FORNO:
       printf("DESLIGA_FORNO!!!\n");
-      ComunicaUartSendInt(COD_SEND, SEND_SYSTEM_STATE, !ligado, 1);
+      ligado=0;
+      ComunicaUartSendInt(COD_SEND, SEND_SYSTEM_STATE, ligado, 1);
 
       break;
     case INICIA_AQUEC:
       printf("INICIA_AQUEC!!!\n");
+      funcionando =1;
       ComunicaUartSendInt(COD_SEND, SEND_FUNCTIONING_STATE, funcionando, 1);
       pthread_create(&controla, NULL, controlaTemp, NULL);
 
       break;
     case CANCELA:
       printf("CANCELA!!!\n");
+      funcionando =0;
       ComunicaUartSendInt(COD_SEND, SEND_FUNCTIONING_STATE, !funcionando, 1);
       semata=1;
       pthread_exit(&controla);
@@ -200,6 +218,7 @@ void trata_SIGINT()
   closeUart();
   gelaForno(0);
   esquentaForno(0);
+  fclose(fpt);
   exit(1);
 }
 int main()
