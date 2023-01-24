@@ -190,9 +190,9 @@ char VerifCrc(char *package, int pkgLength)
 
 float leTempInterna(int code)
 {
-   ComunicaUartReq(COD_REQ, code?REQ_TI: REQ_TR);
+   ComunicaUartReq(COD_REQ, code?REQ_TI: REQ_TI);
    float internalTemperature;
-   internalTemperature= readFromUart(REQ_TR).float_value;
+   internalTemperature= readFromUart(REQ_TI).float_value;
    // memcpy(&internalTemperature, &responsePackage[3], 4);
 
    // printf("leTempInterna: int. temp. is %f\n", internalTemperature);
@@ -201,9 +201,9 @@ float leTempInterna(int code)
 
 float LeTempRef()
 {
-   ComunicaUartReq(COD_REQ, REQ_TI);
+   ComunicaUartReq(COD_REQ, REQ_TR);
    float referenceTemperature;
-   referenceTemperature= readFromUart(REQ_TI).float_value;
+   referenceTemperature= readFromUart(REQ_TR).float_value;
    // memcpy(&referenceTemperature, &responsePackage[3], 4);
    // printf("LeTempRef: ref. temp. is %f\n", referenceTemperature);
 

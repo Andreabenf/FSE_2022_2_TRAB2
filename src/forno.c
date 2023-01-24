@@ -34,7 +34,7 @@ void init()
   fprintf(fpt, "data_e_hora, temperatura_interna, temperatura_externa, temperatura_user, atuadores(%%)\n");
   ComunicaUartSendInt(COD_SEND, SEND_SYSTEM_STATE, ligado, UM_BYTE);
   ComunicaUartSendInt(COD_SEND, SEND_FUNCTIONING_STATE, funcionando, UM_BYTE);
-
+  pid_configura_constantes(Kp_,Ki_,Kd_);
   initWiringPi();
 }
 
@@ -211,6 +211,7 @@ void *menuFunc()
       printf("Kd: ");
 
       scanf("%lf", &Kd_);
+       pid_configura_constantes(Kp_,Ki_,Kd_);
     }
 
     __fpurge(stdin);
