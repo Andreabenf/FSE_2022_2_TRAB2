@@ -53,10 +53,12 @@ void writeUart(char *package, int pkgLength)
 
 Number_type readFromUart(unsigned char code)
 {
-   unsigned char buffer[30];
+   unsigned char buffer[10];
+   unsigned char reference;
    Number_type number = {-1, -1.0};
 
-   int content = read(uart0_filestream, buffer, 30);
+   int content = read(uart0_filestream, (void*)buffer, 9);
+   printf("%d bytes: \n", content);
    if (!content)
    {
       printf("Nenhum dado foi recebido\n");
@@ -67,18 +69,21 @@ Number_type readFromUart(unsigned char code)
    }
    else
    {
-      buffer[29] = '\0';
-      if (code == REQ_DASH_COMAND)
+      buffer[content] = '\0';
+
+
+      if (code == REQ_DASH_COMAND )
       {
          memcpy(&number.int_value, &buffer[3], 4);
       }
       else
       {
+         printf("%c tezste\n", buffer[3]);
          memcpy(&number.float_value, &buffer[3], 4);
       }
       return number;
    }
-   sleep(1.2);
+   delay(300);
    return number;
 }
 
@@ -93,7 +98,7 @@ ComunicaUartReq(char prefix, char dataType)
    writeUart(package, pkgLength);
 
    free(package);
-   sleep(1.2);
+   sleep(1);
    // if (dataType != REQ_DASH_COMAND)
    // {
 
@@ -113,7 +118,7 @@ void ComunicaUartSendInt(char prefix, char dataType, int payload, int size)
    writeUart(package, newPkg);
 
    free(package);
-   sleep(1.2);
+   sleep(1);
 }
 void getResponse()
 {
@@ -159,7 +164,7 @@ void ComunicaUartSendFloat(char prefix, char dataType, float payload, int size)
    writeUart(package, newPkg);
 
    free(package);
-   sleep(1.2);
+    sleep(1);
 }
 void setCrc(char *package, int pkgLength)
 {
@@ -198,9 +203,9 @@ char VerifCrc(char *package, int pkgLength)
 
 float leTempInterna()
 {
-   ComunicaUartReq(COD_REQ, REQ_TI);
+   ComunicaUartReq(COD_REQ, REQ_TR);
    float internalTemperature;
-   internalTemperature= readFromUart(REQ_TI).float_value;
+   internalTemperature= readFromUart(REQ_TR).float_value;
    // memcpy(&internalTemperature, &responsePackage[3], 4);
 
    // printf("leTempInterna: int. temp. is %f\n", internalTemperature);
@@ -209,9 +214,9 @@ float leTempInterna()
 
 float LeTempRef()
 {
-   ComunicaUartReq(COD_REQ, REQ_TR);
+   ComunicaUartReq(COD_REQ, REQ_TI);
    float referenceTemperature;
-   referenceTemperature= readFromUart(REQ_TR).float_value;
+   referenceTemperature= readFromUart(REQ_TI).float_value;
    // memcpy(&referenceTemperature, &responsePackage[3], 4);
    // printf("LeTempRef: ref. temp. is %f\n", referenceTemperature);
 

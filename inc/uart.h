@@ -24,6 +24,10 @@
 #define CANCELA 0xA4
 #define MENU    0xA5
 
+#define QUATRO_BYTES 4
+#define UM_BYTE 1
+
+
 static int uart0_filestream;
 typedef struct Number_type
 {
