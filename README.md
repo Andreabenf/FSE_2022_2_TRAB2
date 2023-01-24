@@ -100,4 +100,5 @@ Nele aparecem as configurações iniciais e a possibilidade de troca-las.
 | Enviar informações via modbus (int e float) | YES | Feito |
 | Receber comandos da dashboard | YES | Feito |
 | Receber pré programação por tempo da TR via arquivo csv inicial | NO |Não foi feito |
+| checar CRC | YES | feito o calculo a cada requisição |
 
