@@ -23,24 +23,23 @@ pthread_t menu;
 int ret1;
 FILE *fpt;
 
-float ti_tmp=1;
-float tr_tmp=1;
-
-
+float ti_tmp = 1;
+float tr_tmp = 1;
 
 void init()
 {
   // connectBme();
   openUart("/dev/serial0");
   fpt = fopen("Logs.csv", "w+");
-  fprintf(fpt,"data_e_hora, temperatura_interna, temperatura_externa, temperatura_user, atuadores(%%)\n");
+  fprintf(fpt, "data_e_hora, temperatura_interna, temperatura_externa, temperatura_user, atuadores(%%)\n");
   ComunicaUartSendInt(COD_SEND, SEND_SYSTEM_STATE, ligado, UM_BYTE);
   ComunicaUartSendInt(COD_SEND, SEND_FUNCTIONING_STATE, funcionando, UM_BYTE);
 
   initWiringPi();
 }
 
-void logCsv(float temperatura_interna,float temperatura_externa,float temperatura_user,float atuadores){
+void logCsv(float temperatura_interna, float temperatura_externa, float temperatura_user, float atuadores)
+{
   time_t t = time(NULL);         // Get current time
   struct tm *tm = localtime(&t); // Convert to local time
   char s[25];
@@ -48,8 +47,7 @@ void logCsv(float temperatura_interna,float temperatura_externa,float temperatur
   // Format the timestamp as a string (e.g., "2018-12-21 12:34:56")
   printf("escrevente...\n");
   strftime(s, sizeof(s), "%Y-%m-%d %H:%M:%S'", tm);
-  fprintf(fpt,"%s, %f, %f, %f\n",s, temperatura_interna, temperatura_externa, temperatura_user, atuadores);
-  
+  fprintf(fpt, "%s, %f, %f, %f\n", s, temperatura_interna, temperatura_externa, temperatura_user, atuadores);
 }
 void menuTR()
 {
@@ -64,6 +62,7 @@ void menuTR()
 
   } while (i != 0 && i != 1);
   int modo = i;
+  printf("enviando...\n");
   ComunicaUartSendInt(COD_SEND, SET_CONTROL_MODE, modo, UM_BYTE);
   modoTR = 0;
   if (i == 1)
@@ -71,6 +70,7 @@ void menuTR()
     printf("Escreva o valor de: \nTR: ");
     scanf("%lf", &referencia_);
     modoTR = 1;
+    ComunicaUartSendFloat(COD_SEND, SEND_REFERENCE_SIGNAL, referencia_, QUATRO_BYTES);
   }
 
   __fpurge(stdin);
@@ -84,13 +84,8 @@ void *controlaTemp()
     float TAMB = 69.9;
 
     printf("TAMB: %.2f⁰C\n", TAMB);
-    
-    float TI = leTempInterna();
-    if(TI<=0.5){
-      TI=ti_tmp;
-    }else{
-      ti_tmp=TI;
-    }
+
+    float TI = leTempInterna(modoTR);
     printf("Ti: %f⁰C\n", (TI));
     int control_signal = (int)pid_controle(TI);
     printf("pid: %d\n", control_signal);
@@ -109,25 +104,21 @@ void *controlaTemp()
       esquentaForno(control_signal);
       gelaForno(0);
     }
-
     if (modoTR)
     {
+      printf("setando...\n");
       ComunicaUartSendFloat(COD_SEND, SEND_REFERENCE_SIGNAL, referencia_, QUATRO_BYTES);
     }
     else
     {
+      
       referencia_ = LeTempRef();
-      if(referencia_<=0.5){
-      referencia_=tr_tmp;
-    }else{
-      tr_tmp=referencia_;
-    }
       printf("TR lida: %f\n", referencia_);
       pid_atualiza_referencia(referencia_);
     }
 
     ComunicaUartSendFloat(COD_SEND, SEND_TEMP_AMB, TAMB, QUATRO_BYTES);
-    logCsv(TI,TAMB,referencia_,control_signal);
+    logCsv(TI, TAMB, referencia_, control_signal);
     delay(1000);
   }
 }
@@ -141,29 +132,30 @@ void recebeComandos()
     {
     case LIGA_FORNO:
       printf("LIGA_FORNO!!!\n");
-      ligado=1;
+      ligado = 1;
       ComunicaUartSendInt(COD_SEND, SEND_SYSTEM_STATE, ligado, UM_BYTE);
 
       break;
     case DESLIGA_FORNO:
       printf("DESLIGA_FORNO!!!\n");
-      ligado=0;
+      ligado = 0;
       ComunicaUartSendInt(COD_SEND, SEND_SYSTEM_STATE, ligado, UM_BYTE);
 
       break;
     case INICIA_AQUEC:
       printf("INICIA_AQUEC!!!\n");
-      funcionando =1;
+      funcionando = 1;
       ComunicaUartSendInt(COD_SEND, SEND_FUNCTIONING_STATE, funcionando, UM_BYTE);
       pthread_create(&controla, NULL, controlaTemp, NULL);
 
       break;
     case CANCELA:
       printf("CANCELA!!!\n");
-      funcionando =0;
+      funcionando = 0;
       ComunicaUartSendInt(COD_SEND, SEND_FUNCTIONING_STATE, funcionando, UM_BYTE);
       system("clear");
-      printf("menu liberado!\n aperte qualquer tecla...\n");
+      system("clear");
+      printf("\nMenu liberado!\nAperte a tecla 2! \n");
       break;
     case MENU:
       printf("MENU!!!\n");
@@ -179,14 +171,15 @@ void *menuFunc()
   int i;
   do
   {
-    // system("clear");
+    system("clear");
     printf("Modo: %s\n", modoTR ? "Terminal" : "DashBoard");
-    printf("Kp: %lf\n",Kp_);
-    printf("Ki: %lf\n",Ki_);
-    printf("Kd: %lf\n",Kd_);
-    printf("TR: %ld\n\n",referencia_);
+    printf("Kp: %lf\n", Kp_);
+    printf("Ki: %lf\n", Ki_);
+    printf("Kd: %lf\n", Kd_);
+    printf("TR: %lf\n\n", referencia_);
     printf("Digite 1 para Decidir MODO TR \n");
     printf("Digite 2 para definir os valores das constantes Kp, Ki e Kd\n");
+    printf("Ou espere o forno ser acionado...\n");
 
     scanf("%d", &i);
     if (i == 1)
@@ -223,7 +216,7 @@ int main()
 {
   init();
   signal(SIGINT, trata_SIGINT);
-      pthread_create(&menu, NULL, menuFunc, NULL);
-  
+  pthread_create(&menu, NULL, menuFunc, NULL);
+
   recebeComandos();
 }
