@@ -24,21 +24,31 @@
 #define CANCELA 0xA4
 #define MENU    0xA5
 
+#define QUATRO_BYTES 4
+#define UM_BYTE 1
 
+
+static int uart0_filestream;
+typedef struct Number_type
+{
+   int int_value;
+   float float_value;
+} Number_type;
 void openUart(char *path);
 void closeUart();
 void writeUart(char *package, int pkgLength);
-
+Number_type readFromUart(unsigned char code);
 void setCrc(char *package, int pkgLength);
 char VerifCrc(char *package, int pkgLength);
-
+ComunicaUartReq(char prefix, char dataType);
 void getResponse();
-
+void montaPack(char *package, char prefix, char dataType);
 int LeComandos();
 float LeTempRef();
 float leTempInterna();
 void ComunicaUartSendInt(char prefix, char dataType, int payload, int size);
 void ComunicaUartSendFloat(char prefix, char dataType, float payload, int size);
-
+static char responsePackage[RX_BUFFER + 1];
+static int globalResPkgLen;
 
 #endif

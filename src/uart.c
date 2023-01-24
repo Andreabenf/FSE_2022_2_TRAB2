@@ -13,16 +13,9 @@
 static int uart0_filestream = -1;
 int pkgLength = 7 + 2;
 static struct termios options;
+
 static char responsePackage[RX_BUFFER + 1];
 static int globalResPkgLen = 0;
-float restemp = 0;
-
-void gettemp()
-{
-   printf("%f", restemp);
-   return;
-}
-
 void openUart(char *path)
 {
    uart0_filestream = open(path, O_RDWR | O_NOCTTY | O_NDELAY);
@@ -44,6 +37,18 @@ void openUart(char *path)
 
    return;
 }
+char verifyCrc(char *package, int pkgLength){
+   short crc16       = calcula_CRC(package, pkgLength-2);
+   short providedCrc = 0;
+   memcpy(&providedCrc, &package[pkgLength-2], 2);
+
+   if(crc16 != providedCrc){
+      printf("verifyCrc: CRC error detected!\n");
+      return 0;
+   }
+
+   return 1;
+} 
 
 void closeUart()
 {
@@ -58,6 +63,48 @@ void writeUart(char *package, int pkgLength)
    return;
 }
 
+Number_type readFromUart(unsigned char code)
+{
+   unsigned char buffer[10];
+   unsigned char reference;
+   Number_type number = {-1, -1.0};
+
+   int content = read(uart0_filestream, (void*)buffer, 9);
+   // printf("%d bytes: \n", content);
+   if (!content)
+   {
+      printf("Nenhum dado foi recebido\n");
+   }
+   else if (content < 0)
+   {
+      printf("Erro ao ler dados\n");
+   }
+   else
+   {
+      char crcVerified = verifyCrc(buffer, content);
+
+      if(!crcVerified){
+         printf("getResponse: provided CRC does not match\n");
+         return number;
+      }
+
+      buffer[content] = '\0';
+
+
+      if (code == REQ_DASH_COMAND )
+      {
+         memcpy(&number.int_value, &buffer[3], 4);
+      }
+      else
+      {
+         printf("%c tezste\n", buffer[3]);
+         memcpy(&number.float_value, &buffer[3], 4);
+      }
+      return number;
+   }
+   return number;
+}
+
 ComunicaUartReq(char prefix, char dataType)
 {
    char *package = (char *)malloc(pkgLength * sizeof(char));
@@ -69,14 +116,17 @@ ComunicaUartReq(char prefix, char dataType)
    writeUart(package, pkgLength);
 
    free(package);
+   sleep(1);
+   // if (dataType != REQ_DASH_COMAND)
+   // {
 
-   getResponse();
+   //    getResponse();
+   // }
 }
-
 
 void ComunicaUartSendInt(char prefix, char dataType, int payload, int size)
 {
-   int newPkg= pkgLength+size;
+   int newPkg = pkgLength + size;
    char *package = (char *)malloc(newPkg * sizeof(char));
 
    montaPack(package, prefix, dataType);
@@ -86,13 +136,12 @@ void ComunicaUartSendInt(char prefix, char dataType, int payload, int size)
    writeUart(package, newPkg);
 
    free(package);
-
-   getResponse();
+   sleep(1);
 }
 
 void ComunicaUartSendFloat(char prefix, char dataType, float payload, int size)
 {
-   int newPkg= pkgLength+size;
+   int newPkg = pkgLength + size;
    char *package = (char *)malloc(newPkg * sizeof(char));
 
    montaPack(package, prefix, dataType);
@@ -102,10 +151,8 @@ void ComunicaUartSendFloat(char prefix, char dataType, float payload, int size)
    writeUart(package, newPkg);
 
    free(package);
-
-   getResponse();
+    sleep(1);
 }
-
 void setCrc(char *package, int pkgLength)
 {
    short crc16 = calcula_CRC(package, pkgLength - 2);
@@ -141,71 +188,31 @@ char VerifCrc(char *package, int pkgLength)
    return 1;
 }
 
-void getResponse()
+float leTempInterna(int code)
 {
-   memset(responsePackage, 0x00, RX_BUFFER);
-
-   sleep(1);
-
-   globalResPkgLen = read(uart0_filestream, (void *)responsePackage, RX_BUFFER);
-
-   if (globalResPkgLen < 0)
-   {
-      //printf("getResponse: read error\n");
-   }
-   else if (globalResPkgLen == 0)
-   {
-      //printf("getResponse: got no response\n");
-      return;
-   }
-   else
-   {
-      responsePackage[globalResPkgLen] = '\0';
-
-      char crcVerified = VerifCrc(responsePackage, globalResPkgLen);
-
-      if (!crcVerified)
-      {
-         printf("getResponse: Erro no match CRC\n");
-         return;
-      }
-      //printf("getResponse: received %d bytes\n", globalResPkgLen);
-   }
-
-   return;
-}
-
-float leTempInterna()
-{
-   ComunicaUartReq(COD_REQ, REQ_TI);
-
+   ComunicaUartReq(COD_REQ, code?REQ_TI: REQ_TI);
    float internalTemperature;
-   memcpy(&internalTemperature, &responsePackage[3], 4);
-   memcpy(&restemp, &responsePackage[3], 4);
+   internalTemperature= readFromUart(REQ_TI).float_value;
+   // memcpy(&internalTemperature, &responsePackage[3], 4);
 
-   printf("leTempInterna: int. temp. is %f\n", internalTemperature);
+   // printf("leTempInterna: int. temp. is %f\n", internalTemperature);
    return internalTemperature;
 }
 
 float LeTempRef()
 {
    ComunicaUartReq(COD_REQ, REQ_TR);
-
    float referenceTemperature;
-   memcpy(&referenceTemperature, &responsePackage[3], 4);
-   printf("LeTempRef: ref. temp. is %f\n", referenceTemperature);
+   referenceTemperature= readFromUart(REQ_TR).float_value;
+   // memcpy(&referenceTemperature, &responsePackage[3], 4);
+   // printf("LeTempRef: ref. temp. is %f\n", referenceTemperature);
 
    return referenceTemperature;
 }
 
 int LeComandos()
 {
-
    ComunicaUartReq(COD_REQ, REQ_DASH_COMAND);
-
-   int comandorec;
-   memcpy(&comandorec, &responsePackage[3], 4);
-   // printf("LeComandos: %d\n", comandorec);
-
-   return comandorec;
+   Number_type comandorec = readFromUart(REQ_DASH_COMAND);
+   return comandorec.int_value;
 }
