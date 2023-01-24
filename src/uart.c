@@ -37,6 +37,18 @@ void openUart(char *path)
 
    return;
 }
+char verifyCrc(char *package, int pkgLength){
+   short crc16       = calcula_CRC(package, pkgLength-2);
+   short providedCrc = 0;
+   memcpy(&providedCrc, &package[pkgLength-2], 2);
+
+   if(crc16 != providedCrc){
+      printf("verifyCrc: CRC error detected!\n");
+      return 0;
+   }
+
+   return 1;
+} 
 
 void closeUart()
 {
@@ -69,6 +81,13 @@ Number_type readFromUart(unsigned char code)
    }
    else
    {
+      char crcVerified = verifyCrc(buffer, content);
+
+      if(!crcVerified){
+         printf("getResponse: provided CRC does not match\n");
+         return number;
+      }
+
       buffer[content] = '\0';
 
 
@@ -118,36 +137,6 @@ void ComunicaUartSendInt(char prefix, char dataType, int payload, int size)
 
    free(package);
    sleep(1);
-}
-void getResponse()
-{
-   memset(responsePackage, 0x00, RX_BUFFER);
-
-   globalResPkgLen = read(uart0_filestream, (void *)responsePackage, RX_BUFFER);
-
-   if (globalResPkgLen < 0)
-   {
-      // printf("getResponse: read error\n");
-   }
-   else if (globalResPkgLen == 0)
-   {
-      // printf("getResponse: got no response\n");
-      return;
-   }
-   else
-   {
-      responsePackage[globalResPkgLen] = '\0';
-      char crcVerified = VerifCrc(responsePackage, globalResPkgLen);
-
-      if (!crcVerified)
-      {
-         // printf("getResponse: Erro no match CRC\n");
-         return;
-      }
-      // printf("getResponse: received %d bytes\n", globalResPkgLen);
-   }
-   sleep(1.2);
-   return;
 }
 
 void ComunicaUartSendFloat(char prefix, char dataType, float payload, int size)

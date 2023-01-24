@@ -28,7 +28,7 @@ float tr_tmp = 1;
 
 void init()
 {
-  // connectBme();
+  connectBme();
   openUart("/dev/serial0");
   fpt = fopen("Logs.csv", "w+");
   fprintf(fpt, "data_e_hora, temperatura_interna, temperatura_externa, temperatura_user, atuadores(%%)\n");
@@ -80,12 +80,20 @@ void *controlaTemp()
 {
   while (funcionando)
   {
-    // float TAMB = getCurrentTemperature();
-    float TAMB = 69.9;
+    float TAMB = getCurrentTemperature();
+    // float TAMB = 69.9;
 
     printf("TAMB: %.2f⁰C\n", TAMB);
 
     float TI = leTempInterna(modoTR);
+     if (TI <= 0.5)
+    {
+      TI = ti_tmp;
+    }
+    else
+    {
+      ti_tmp = TI;
+    }
     printf("Ti: %f⁰C\n", (TI));
     int control_signal = (int)pid_controle(TI);
     printf("pid: %d\n", control_signal);
@@ -113,9 +121,14 @@ void *controlaTemp()
     {
       
       referencia_ = LeTempRef();
+      if(referencia_<=0.5){
+        referencia_=tr_tmp;
+      }else{
+        tr_tmp=referencia_;
+      }
       printf("TR lida: %f\n", referencia_);
-      pid_atualiza_referencia(referencia_);
     }
+      pid_atualiza_referencia(referencia_);
 
     ComunicaUartSendFloat(COD_SEND, SEND_TEMP_AMB, TAMB, QUATRO_BYTES);
     logCsv(TI, TAMB, referencia_, control_signal);
