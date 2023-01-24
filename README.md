@@ -86,6 +86,16 @@ Nele aparecem as configurações iniciais e a possibilidade de troca-las.
 ![](https://i.imgur.com/e5C8Fn7.png)
 
 
+## Gráfico:
+
+![](https://i.imgur.com/Yc9deub.png)
+<p>
+    O inicio do gŕafico é estável devido ao peŕiodo em que o código se encontra n omodo menu. Após este periodo podemos ver Sinal de controle indo rapidamente para baixo. Isso se deve as primeiras temperaturas estavem vindo incorretas.
+
+Quando mais estável, o código se comporta como o esperado.
+Sequências de pico de +100 E alguns -100(devido a erros de leitura ocasionais).
+Quando as duas tempraturas se aproximam é possível ver uma suavização do sinal de controle. Ele esquenta pouco ou aquece poco devido ao fato do pid não vir mais -100 ou +100.
+</p>
 
 # Resumo de features:
 
